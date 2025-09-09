@@ -9,3 +9,5 @@ requests
 easyocr
 torch
 torchvision
+matplotlib
+
