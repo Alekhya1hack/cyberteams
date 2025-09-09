@@ -259,10 +259,15 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     st.subheader("Check a UPI ID")
     upi_input = st.text_input("Enter a UPI ID to check:", key="upi_input")
+
     if st.button("Check UPI ID", key="upi_check_btn"):
         if upi_input:
-            status, message = check_upi_id(upi_input)
-            if status == "safe":
+            # 🔑 reload latest blacklist
+            blacklist = load_blacklist()
+            status, message = check_upi_id(upi_input.lower().strip())
+            if upi_input.lower().strip() in blacklist:
+                st.error(f"🚫 '{upi_input}' is in the blacklist!")
+            elif status == "safe":
                 st.success(message)
             elif status == "invalid":
                 st.warning(message)
@@ -271,20 +276,23 @@ with tab1:
 
     st.subheader("➕ Add to Blacklist")
     new_upi = st.text_input("Enter a UPI ID to blacklist:", key="upi_blacklist_input")
+
     if st.button("Add to Blacklist", key="upi_add_btn"):
         if new_upi:
             new_upi = new_upi.lower().strip()
-            if new_upi not in BLACKLIST:
-                BLACKLIST.append(new_upi)
-                save_blacklist(BLACKLIST)
+            blacklist = load_blacklist()  # reload before adding
+            if new_upi not in blacklist:
+                blacklist.append(new_upi)
+                save_blacklist(blacklist)
                 log_blacklist_addition(new_upi, added_by="streamlit_user")
                 st.success(f"✅ '{new_upi}' added to blacklist and logged!")
             else:
                 st.info(f"ℹ '{new_upi}' is already in the blacklist.")
 
     st.subheader("📄 Current Blacklist")
-    if BLACKLIST:
-        st.dataframe({"Blacklisted UPI IDs": BLACKLIST})
+    blacklist = load_blacklist()  # always load fresh
+    if blacklist:
+        st.dataframe({"Blacklisted UPI IDs": blacklist})
     else:
         st.write("✅ No blacklisted UPI IDs found.")
 
